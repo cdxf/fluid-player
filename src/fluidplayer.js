@@ -38,6 +38,8 @@ const fluidPlayerClass = function () {
     // This should help readability and context awareness slightly...
     const self = this;
 
+    let progressContainer;
+    
     self.domRef = {
         player: null
     };
@@ -521,6 +523,13 @@ const fluidPlayerClass = function () {
         }
     };
 
+    self.getProgressContainer = () => {
+        if (!progressContainer) {
+                progressContainer = self.domRef.wrapper.querySelector('.fluid_controls_progress_container');
+            }
+            return progressContainer;
+    };
+
     self.getCurrentVideoDuration = () => {
         if (self.domRef.player) {
             return self.domRef.player.duration;
@@ -932,7 +941,7 @@ const fluidPlayerClass = function () {
         const currentProgressTag = self.domRef.player.parentNode.getElementsByClassName('fluid_controls_currentprogress');
 
         for (let i = 0; i < currentProgressTag.length; i++) {
-            currentProgressTag[i].style.width = (self.domRef.player.currentTime / self.currentVideoDuration * 100) + '%';
+            currentProgressTag[i].style.width = (self.domRef.player.calculatingCurrentTime / self.currentVideoDuration * 100) + '%';
         }
     };
 
@@ -1236,7 +1245,7 @@ const fluidPlayerClass = function () {
         if (self.displayOptions.layoutControls.showCardBoardView) {
             initialPosition = self.getEventOffsetX(event, event.target.parentNode);
         } else {
-            initialPosition = self.getEventOffsetX(event, self.domRef.wrapper.querySelector('.fluid_controls_progress_container'));
+            initialPosition = self.getEventOffsetX(event, this.getProgressContainer());
         }
 
         if (self.isCurrentlyPlayingAd) {
@@ -1250,16 +1259,20 @@ const fluidPlayerClass = function () {
             self.domRef.player.pause();
         }
 
-        const shiftTime = timeBarX => {
-            const totalWidth = self.domRef.wrapper.querySelector('.fluid_controls_progress_container').clientWidth;
+        const shiftTime = (timeBarX, updatecurrentTime) => {
+            const totalWidth = this.getProgressContainer().clientWidth;
             if (totalWidth) {
+                self.domRef.player.calculatingCurrentTime = self.currentVideoDuration * timeBarX / totalWidth;
+                if(updatecurrentTime){
                 self.domRef.player.currentTime = self.currentVideoDuration * timeBarX / totalWidth;
+                }
             }
         };
 
         const onProgressbarMouseMove = event => {
             const currentX = self.getEventOffsetX(event, event.target.parentNode);
             initialPosition = NaN; // mouse up will fire after the move, we don't want to trigger the initial position in the event of iOS
+            shiftTime(currentX,false);
             self.contolProgressbarUpdate();
             self.controlDurationUpdate();
         };
@@ -1277,7 +1290,7 @@ const fluidPlayerClass = function () {
             }
 
             if (!isNaN(clickedX)) {
-                shiftTime(clickedX);
+                shiftTime(clickedX,true);
             }
 
             if (!initiallyPaused) {
@@ -1748,7 +1761,7 @@ const fluidPlayerClass = function () {
             return;
         }
 
-        const progressContainer = self.domRef.wrapper.querySelector('.fluid_controls_progress_container');
+        const progressContainer = this.getProgressContainer();
         const previewContainer = document.createElement('div');
 
         previewContainer.className = 'fluid_timeline_preview';
@@ -1758,9 +1771,8 @@ const fluidPlayerClass = function () {
         progressContainer.appendChild(previewContainer);
 
         // Set up hover for time position preview display
-        self.domRef.wrapper.querySelector('.fluid_controls_progress_container')
+        progressContainer
             .addEventListener('mousemove', event => {
-                const progressContainer = self.domRef.wrapper.querySelector('.fluid_controls_progress_container');
                 const totalWidth = progressContainer.clientWidth;
                 const hoverTimeItem = self.domRef.wrapper.querySelector('.fluid_timeline_preview');
                 const hoverQ = self.getEventOffsetX(event, progressContainer);
@@ -1773,7 +1785,7 @@ const fluidPlayerClass = function () {
             }, false);
 
         // Hide timeline preview on mouseout
-        self.domRef.wrapper.querySelector('.fluid_controls_progress_container')
+        progressContainer
             .addEventListener('mouseout', () => {
                 const hoverTimeItem = self.domRef.wrapper.querySelector('.fluid_timeline_preview');
                 hoverTimeItem.style.display = 'none';
