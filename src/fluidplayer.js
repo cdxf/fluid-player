@@ -1260,7 +1260,6 @@ const fluidPlayerClass = function () {
         const onProgressbarMouseMove = event => {
             const currentX = self.getEventOffsetX(event, event.target.parentNode);
             initialPosition = NaN; // mouse up will fire after the move, we don't want to trigger the initial position in the event of iOS
-            shiftTime(currentX);
             self.contolProgressbarUpdate();
             self.controlDurationUpdate();
         };
