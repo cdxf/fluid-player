@@ -1702,6 +1702,7 @@ const fluidPlayerClass = function () {
 
         //Set the progressbar
         self.domRef.player.addEventListener('timeupdate', () => {
+            self.domRef.player.calculatingCurrentTime = self.domRef.player.currentTime;
             self.contolProgressbarUpdate();
             self.controlDurationUpdate();
         });
